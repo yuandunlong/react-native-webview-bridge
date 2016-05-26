@@ -3,6 +3,7 @@ package com.github.alinz.reactnativewebviewbridge;
 import javax.annotation.Nullable;
 import java.util.Map;
 
+import android.os.Build;
 import android.webkit.WebView;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.views.webview.ReactWebViewManager;
@@ -46,7 +47,11 @@ public class WebViewBridgeManager extends ReactWebViewManager {
   private void sendToBridge(WebView root, String message) {
     //root.loadUrl("javascript:(function() {\n" + script + ";\n})();");
     String script = "WebViewBridge.onMessage('" + message + "');";
-    root.evaluateJavascript(script, null);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          root.evaluateJavascript(script, null);
+      }else{
+          root.loadUrl("javascript:"+script);
+      }
   }
 
 
@@ -64,17 +69,32 @@ public class WebViewBridgeManager extends ReactWebViewManager {
   }
   private void injectBridgeScript(WebView root) {
     //this code needs to be executed everytime a url changes.
-    root.evaluateJavascript(""
-    + "(function() {"
-        + "if (window.WebViewBridge) return;"
-        + "var customEvent = document.createEvent('Event');"
-        + "var WebViewBridge = {"
-            + "send: function(message) { WebViewBridgeAndroid.send(message); },"
-            + "onMessage: function() {}"
-        + "};"
-        + "window.WebViewBridge = WebViewBridge;"
-        + "customEvent.initEvent('WebViewBridge', true, true);"
-        + "document.dispatchEvent(customEvent);"
-    +"}());", null);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          root.evaluateJavascript(""
+          + "(function() {"
+              + "if (window.WebViewBridge) return;"
+              + "var customEvent = document.createEvent('Event');"
+              + "var WebViewBridge = {"
+                  + "send: function(message) { WebViewBridgeAndroid.send(message); },"
+                  + "onMessage: function() {}"
+              + "};"
+              + "window.WebViewBridge = WebViewBridge;"
+              + "customEvent.initEvent('WebViewBridge', true, true);"
+              + "document.dispatchEvent(customEvent);"
+          +"}());", null);
+      }else{
+          root.loadUrl("javascript:"
+                  + "(function() {"
+                  + "if (window.WebViewBridge) return;"
+                  + "var customEvent = document.createEvent('Event');"
+                  + "var WebViewBridge = {"
+                  + "send: function(message) { WebViewBridgeAndroid.send(message); },"
+                  + "onMessage: function() {}"
+                  + "};"
+                  + "window.WebViewBridge = WebViewBridge;"
+                  + "customEvent.initEvent('WebViewBridge', true, true);"
+                  + "document.dispatchEvent(customEvent);"
+                  + "}());", null);
+      }
   }
 }
